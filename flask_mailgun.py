@@ -115,7 +115,6 @@ class MailGun(object):
         app.route('/incoming', methods=['POST'])(process_email)
         """
         email = request.form
-        ipdb.set_trace()
         self.mailgun_api.verify_email(email)
         # Process the attachments
         for func in self._on_attachment:
@@ -138,7 +137,6 @@ class MailGun(object):
         return "OK"
 
     def reply_sender(self, email, text=None):
-        ipdb.set_trace()
         timestamp = email.get("timestamp")
         sender = email.get('from')
         recipient = email.get('To')
@@ -147,7 +145,6 @@ class MailGun(object):
             message = 'Hello {} \n Yum Yum! you feed me at {}.'
             text = message.format(sender,
                                   timestamp)
-        ipdb.set_trace()
         self.send_email(**{'from': "%(route)s@%(domain)s" % self.mailgun_api.__dict__,
                            'to': [sender],
                            'subject': subject,
