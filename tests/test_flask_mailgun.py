@@ -4,17 +4,17 @@ Created on Mon May  9 15:33:58 2016
 
 @author: richard
 """
+import ipdb
 
 import os
 import unittest
-
 from mock import patch, MagicMock
 
 from flask import Flask
 import flask_mailgun
 from tests import config
 from tests.fixtures.email import make_email_request, make_email, sign_email
-import ipdb
+
 
 
 def get_app(name):
@@ -69,10 +69,10 @@ class ReceiveMessageTest(MailgunTestBase):
         self.mailgun.mailgun_api.verify_email(email)
 
     def test_receive_message(self):
-        # request = make_email_request(self.mailgun)
+        request = make_email_request(self.mailgun)
         self.mailgun.create_route('/upload')
         self.mailgun.run_async = False
-        response = self.appclient.post('/upload', data=self.email_req)
+        response = self.appclient.post('/upload', data=request)
         self.assertEqual(response.status_code, 200)
 
 
@@ -98,6 +98,39 @@ class ReceiveMessageTest(MailgunTestBase):
 #    def test_on_receive(self):
 #        response = self.appclient.post('/upload', data=self.email_req)
 #        self.assertEqual(response.status_code, 200)
+
+
+
+class ReceiveMessageCallbacksTest(MailgunTestBase):
+
+    def setUp(self):
+        super(ReceiveMessageCallbacksTest, self).setUp()
+        self.mailgun.run_async = False
+        self.mailgun.create_route('/upload')
+
+        self.receve_email_func = MagicMock()
+        self.attachment_func = MagicMock()
+
+        self.mailgun.on_receive(self.receve_email_func)
+        self.mailgun.on_attachment(self.attachment_func)
+        self.email = make_email_request(self.mailgun)
+
+
+class ReceiveMessageSyncTest(ReceiveMessageCallbacksTest):
+
+    def test_receive_message(self):
+        response = self.appclient.post('/upload', data=self.email)
+        ipdb.set_trace()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.receve_email_func.call_count, 1)
+        self.assertEqual(self.attachment_func.call_count, 1)
+
+
+class ReceiveMessageAsyncTest(ReceiveMessageSyncTest):
+
+    def setUp(self):
+        super(ReceiveMessageAsyncTest, self).setUp()
+        self.mailgun.run_async = True
 
 
 if __name__ == '__main__':

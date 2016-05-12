@@ -4,6 +4,8 @@ Created on Wed Jan 27 21:48:14 2016
 
 @author: richard, yunxi
 """
+import ipdb
+
 import requests
 from flask import request
 # For verification
@@ -11,7 +13,6 @@ import hashlib
 import hmac
 import os
 from decorator import decorator
-import ipdb
 from threading import Thread
 
 
@@ -81,7 +82,7 @@ class MailGun(object):
         """Create the mailgun route and register endpoint with flask app
 
         this needs to be done after `mailgun.app_init`"""
-        
+
         # register the process_email endpoint with the flask app
         @self.app.route(dest, methods=['POST'])
         def mail_endpoint():
@@ -96,7 +97,6 @@ class MailGun(object):
         def process_email(email)`
         """
         self._on_receive.append(func)
-        ipdb.set_trace()
         return func
 
     def on_attachment(self, func):
@@ -106,7 +106,6 @@ class MailGun(object):
         def process_attachment(email, filename, fstream)`
         """
         self._on_attachment.append(func)
-        ipdb.set_trace()
         return func
 
     def process_email(self, request):
