@@ -16,7 +16,6 @@ from tests import config
 from tests.fixtures.email import make_email_request, make_email, sign_email
 
 
-
 def get_app(name):
     app = Flask(name)
     app.config.from_object(config)
@@ -100,7 +99,6 @@ class ReceiveMessageTest(MailgunTestBase):
 #        self.assertEqual(response.status_code, 200)
 
 
-
 class ReceiveMessageCallbacksTest(MailgunTestBase):
 
     def setUp(self):
@@ -120,7 +118,7 @@ class ReceiveMessageSyncTest(ReceiveMessageCallbacksTest):
 
     def test_receive_message(self):
         response = self.appclient.post('/upload', data=self.email)
-        ipdb.set_trace()
+        # ipdb.set_trace()
         self.assertEqual(response.status_code, 200)
         self.assertEqual(self.receve_email_func.call_count, 1)
         self.assertEqual(self.attachment_func.call_count, 1)
