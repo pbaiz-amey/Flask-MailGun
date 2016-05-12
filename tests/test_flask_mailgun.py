@@ -16,6 +16,7 @@ from tests import config
 from tests.fixtures.email import make_email_request, make_email, sign_email
 import ipdb
 
+
 def get_app(name):
     app = Flask(name)
     app.config.from_object(config)
@@ -56,14 +57,8 @@ class SendMessageTest(MailgunTestBase):
         self.assertEqual(data['text'], message['text'])
 
 
-class ReceiveMessageTest(MailgunTestBase):    
-#    def __init__(self):
-#        # Add on_receive and on_attachment functionality to the App
-#        @self.mailgun.on_receive
-#        def 
-    
+class ReceiveMessageTest(MailgunTestBase):
     def test_email_verify(self):
-        # ipdb.set_trace()
         email = make_email()
         # assert error if email not signed
         with self.assertRaises(flask_mailgun.MailGunException):
@@ -74,15 +69,36 @@ class ReceiveMessageTest(MailgunTestBase):
 
     def test_receive_message(self):
         request = make_email_request(self.mailgun)
-        # files = request.pop('files',[])
         self.mailgun.create_route('/upload')
         self.mailgun.run_async = False
-
-        ipdb.set_trace()
-        response = self.appclient.post('/upload', data=request)  #, file=[request['file']])
-        ipdb.set_trace()
+        response = self.appclient.post('/upload', data=request)
         self.assertEqual(response.status_code, 200)
-        # self.mailgun.process_email(request)
+
+
+class ProcessMessageTest(MailgunTestBase):
+    def __init__(self):
+        self.email_request = make_email_request(self.mailgun)
+
+        # Add on_receive and on_attachment functionality to the App
+        @self.mailgun.on_receive
+        def app_on_attachment(email, filename, stream):
+            ipdb.set_trace()
+            self.assertEqual(email, self.email_request)
+            self.assertEqual(filename, self.email_request)
+
+        @self.mailgun.on_attachment
+        def app_on_receive(email):
+            ipdb.set_trace()
+            self.assertEqual(email, self.email_request)
+
+    def test_on_attachment(self):
+        response = self.appclient.post('/upload', data=self.email_request)
+        self.assertEqual(response.status_code, 200)
+
+    def test_on_receive(self):
+        response = self.appclient.post('/upload', data=self.email_request)
+        self.assertEqual(response.status_code, 200)
+
 
 if __name__ == '__main__':
     unittest.main()
