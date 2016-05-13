@@ -45,7 +45,6 @@ def async(f, *args, **kwargs):
     return thread
 
 
-
 class MailGun(object):
     """MailGun Class"""
     app = None
@@ -177,8 +176,9 @@ class MailGunAPI(object):
             raise MailGunException("No mailgun key supplied.")
 
     def send_email(self, **kwargs):
-        files = kwargs.pop('files',[])
-        responce = requests.post(self.sendpoint, data=kwargs, files=files, auth=self.auth)
+        files = kwargs.pop('files', [])
+        responce = requests.post(self.sendpoint, data=kwargs, files=files,
+                                 auth=self.auth)
         responce.raise_for_status()
         return responce
 
@@ -222,6 +222,3 @@ class MailGunAPI(object):
     @property
     def auth(self):
         return ('api', self.api_key)
-
-
-
