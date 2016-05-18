@@ -12,7 +12,7 @@ import hmac
 import os
 from decorator import decorator
 from threading import Thread
-
+from werkzeug.utils import secure_filename
 
 class MailGunException(Exception):
     pass
@@ -40,6 +40,8 @@ MAILGUN_API_URL = 'https://api.mailgun.net/v3'
 
 @decorator
 def async(f, *args, **kwargs):
+    # this is not thread safe at the moment
+    # TODO consider using celery or multiprocesing pool
     thread = Thread(target=f, args=args, kwargs=kwargs)
     thread.start()
     return thread
@@ -102,7 +104,7 @@ class MailGun(object):
         """Register callback function with mailgun
 
         `@mailgun.on_attachment
-        def process_attachment(email, filename, fstream)`
+        def process_attachment(email, filestorage)`
         """
         self._on_attachment.append(func)
         return func
@@ -119,7 +121,8 @@ class MailGun(object):
             if self.run_async:
                 func = async(func)
             for attachment in request.files.values():
-                func(email, attachment.filename, attachment.stream)
+                attachment.filename = secure_filename(attachment.filename)
+                func(email, attachment)
                 # data = attachment.stream.read()
                 # with open(attachment.filename, "w") as f:
                 #    f.write(data)
@@ -143,7 +146,8 @@ class MailGun(object):
             message = 'Hello {} \n Yum Yum! you feed me at {}.'
             text = message.format(sender,
                                   timestamp)
-        self.send_email(**{'from': "%(route)s@%(domain)s" % self.mailgun_api.__dict__,
+        recipient = "%(route)s@%(domain)s" % self.mailgun_api.__dict__
+        self.send_email(**{'from': recipient,
                            'to': [sender],
                            'subject': subject,
                            'text': text})
@@ -177,19 +181,23 @@ class MailGunAPI(object):
 
     def send_email(self, **kwargs):
         files = kwargs.pop('files', [])
-        responce = requests.post(self.sendpoint, data=kwargs, files=files,
+        responce = requests.post(self.sendpoint,
+                                 data=kwargs,
+                                 files=files,
                                  auth=self.auth)
         responce.raise_for_status()
         return responce
 
     def create_route(self, dest='/messages/', data=None,):
         self.dest = dest
+        action = "forward('http://%(host)s%(dest)s')" % self.__dict__
+
         data = {"priority": 0,
                 "description": "Sample route",
                 "expression":
                 "match_recipient('%(route)s@%(domain)s')" % self.__dict__,
-                "action": ["forward('http://%(host)s%(dest)s')" % self.__dict__,
-                           "stop()"]}
+                "action": [action, "stop()"]}
+
         return requests.post(self.api_url + 'routes',
                              auth=self.auth,
                              data=data)
